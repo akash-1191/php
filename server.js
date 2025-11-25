@@ -96,6 +96,104 @@ app.get("/add", (req,res)=>{
     res.render("add");
 });
 
+
+
+app.use(express.urlencoded({extended:true}));
+app.use(express.static(path.join(__dirname,"public")));
+
+app.set("view engine","ejs");
+app.set("views",path.join(__dirname,"views"))
+
+mongoose
+.connect("mongodb://localhost:27017/userdbdemo")
+.then(()=>{console.log("connection done")})
+.catch(err=>console.log("err"));
+
+const studentschema= mongoose.Schema({
+    username:String,
+    email:String,
+    password:String,
+    photo:String
+});
+
+const student=mongoose.model("student",studentschema);
+
+//multer
+const storage=multer.diskStorage({
+    destination:(req,file,cb)=>{
+        cb(null,"uploads");
+    },
+    filename:(req,file,cb)=>{
+        cb(null,Date.now()+"_"+file.originalname);
+    },
+});
+
+const uploads=multer({storage});
+
+app.get("/reg",(req,res)=>{
+    res.render("reg");
+})
+
+app.get("/login",(req,res)=>{
+    res.render("login");
+})
+
+//reg
+app.post("/register",uploads.single("photo"), (req,res)=>{
+
+    const userdata=new student({
+        username:req.body.username,
+        email:req.body.email,
+        password:req.body.password,
+        photo:req.file? req.file.filename:""
+    });
+    userdata.save();
+    res.render("login");
+});
+
+app.post("/login",async (req,res)=>{
+
+    const {email,password}=req.body;
+    if(!email|| !password)return res.send("provide email or password");
+
+    const s = await student.findOne({
+        email:req.body.email,
+        password:req.body.password
+    });
+    if (!s) return res.json("invalid");
+
+    res.render("dashboard");
+});
+
+
+//show data
+app.get("/showdata",async (req,res)=>{
+    const datais= await student.find();
+    res.render("showdata" ,{data:datais});
+});
+
+//edit data
+app.get("/edit/:id" ,async (req,res)=>{
+    const editdata= await student.findById(req.params.id);
+    res.render("edit",{data:editdata});
+});
+
+// Edit data according to the form 
+app.post("/editdata/:id",async (req,res)=>{
+   await student.findByIdAndUpdate(req.params.id, {
+        name: req.body.name,
+        subject: req.body.subject,
+        marks: req.body.marks
+    });
+    res.redirect("/showdata");
+});
+//delete
+app.get("/delete/:id",async (req,res)=>{
+    await student.findByIdAndDelete(req.params.id);
+    res.redirect("/show")
+});
+
+
 //Start server
 app.listen(3000, ()=>{
     console.log("server is running.......")
