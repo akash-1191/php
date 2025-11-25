@@ -1,0 +1,15 @@
+<h1>Products</h1>
+<a href="/add">Add Products</a>
+<br><br>
+
+<% products.forEach(p=>{ %>
+    <div>
+        <img src="/uploads/<%= p.photo %>" alt="" width="150">
+        <p>Name: <%= p.name %>
+        </p>
+        <p>Price: <%= p.price %>
+        </p>
+        <a href="/delete/<%= p._id%>">Delete</a>
+    </div>
+    <br>
+    <% }) %>
